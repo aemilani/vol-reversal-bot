@@ -98,10 +98,10 @@ def close_short():
 
 
 config = dotenv_values('.env')
-API_KEY = config.get('BYBIT_TEST_API_KEY')
-API_SECRET = config.get('BYBIT_TEST_API_SECRET')
+API_KEY = config.get('BYBIT_API_KEY')
+API_SECRET = config.get('BYBIT_API_SECRET')
 
-session = HTTP(testnet=True, api_key=API_KEY, api_secret=API_SECRET)
+session = HTTP(testnet=False, api_key=API_KEY, api_secret=API_SECRET)
 
 # Params
 
