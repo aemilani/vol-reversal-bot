@@ -122,15 +122,16 @@ print(f'{datetime.now()}: Trading started')
 
 while True:
     try:
-        candles = session.get_kline(category="linear", symbol="BTCUSDT", interval=tf, limit=w + 1)['result']['list']
+        candles = session.get_kline(category="linear", symbol="BTCUSDT", interval=tf, limit=w)['result']['list']
         break
     except Exception as e:
         print(f'{datetime.now()}: {e}. Trying again...')
         time.sleep(1)
-last_w_candles = candles[1:]
+
 curr_candle = candles[0]
 curr_candle_size = float(curr_candle[2]) - float(curr_candle[3])
 
+last_w_candles = candles
 last_w_candle_sizes = [float(x[2]) - float(x[3]) for x in last_w_candles]
 last_w_candle_sizes_mean = np.mean(last_w_candle_sizes)
 last_w_candle_sizes_std = np.std(last_w_candle_sizes, ddof=1)
@@ -154,7 +155,7 @@ while True:
             print(f'{datetime.now()}: {e}. Trying again...')
             time.sleep(1)
 
-    # Close the position and get the next candle
+    # Close the position
     if 1000 * time.time() >= next_ts:
         if pos_size > 0:
             print(f'{datetime.now()}: Closing position @ {curr_candle[4]}')
@@ -174,33 +175,26 @@ while True:
         print(f'\n{datetime.fromtimestamp(next_ts / 1000)}: Next candle')
         skip_candle = False
 
-        while True:
-            try:
-                candles = session.get_kline(category="linear", symbol="BTCUSDT", interval=tf, limit=w + 1)['result'][
-                    'list']
-                break
-            except Exception as e:
-                print(f'{datetime.now()}: {e}. Trying again...')
-                time.sleep(1)
-        last_w_candles = candles[1:]
-        curr_candle = candles[0]
-        last_w_candle_sizes = [float(x[2]) - float(x[3]) for x in last_w_candles]
-        last_w_candle_sizes_mean = np.mean(last_w_candle_sizes)
-        last_w_candle_sizes_std = np.std(last_w_candle_sizes, ddof=1)
-        thr = last_w_candle_sizes_mean + std_multiple * last_w_candle_sizes_std
-        curr_ts = int(curr_candle[0])
-        next_ts = curr_ts + 3600000
-
-    # Update current candle
+    # Update candles
     while True:
         try:
-            curr_candle = session.get_kline(
-                category="linear", symbol="BTCUSDT", interval=tf, limit=1)['result']['list'][0]
+            candles = session.get_kline(category="linear", symbol="BTCUSDT", interval=tf, limit=w)['result']['list']
             break
         except Exception as e:
             print(f'{datetime.now()}: {e}. Trying again...')
             time.sleep(1)
+
+    curr_candle = candles[0]
     curr_candle_size = float(curr_candle[2]) - float(curr_candle[3])
+
+    last_w_candles = candles
+    last_w_candle_sizes = [float(x[2]) - float(x[3]) for x in last_w_candles]
+    last_w_candle_sizes_mean = np.mean(last_w_candle_sizes)
+    last_w_candle_sizes_std = np.std(last_w_candle_sizes, ddof=1)
+    thr = last_w_candle_sizes_mean + std_multiple * last_w_candle_sizes_std
+
+    curr_ts = int(curr_candle[0])
+    next_ts = curr_ts + 3600000
 
     # Open position
     if not skip_candle and (pos_size == 0) and (curr_candle_size >= thr):
